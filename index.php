@@ -1,21 +1,12 @@
 <?php
-// Simulation d'une page de profil utilisateur vulnérable
+// On récupère une donnée directement de l'URL (très dangereux)
+$id = $_GET['id']; 
 
-$user_id = $_GET['id']; // Donnée non nettoyée
+// 1. Faille SQL : La donnée est mise directement dans la requête
+$query = "SELECT * FROM users WHERE id = " . $id; 
 
-// 1. Faille XSS (Cross-Site Scripting)
-echo "<h1>Profil de l'utilisateur : " . $user_id . "</h1>";
+// 2. Faille XSS : On affiche la donnée sans la nettoyer
+echo "<h1>Profil de l'utilisateur : " . $id . "</h1>"; 
 
-// 2. Faille d'Injection SQL (Simulation)
-$conn = mysqli_connect("localhost", "db_user", "db_password", "database");
-$query = "SELECT * FROM users WHERE id = " . $user_id; 
-$result = mysqli_query($conn, $query);
-
-echo "<p>Recherche effectuée dans la base de données.</p>";
-?>
-<?php
-$user = $_GET['id'];
-// Cette ligne est dangereuse et devrait déclencher une alerte CodeQL
-$query = "SELECT * FROM users WHERE id = " . $user;
-echo "Résultat pour l'utilisateur : " . $user;
+echo "Analyse en cours...";
 ?>
