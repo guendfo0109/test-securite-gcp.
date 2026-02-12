@@ -3,15 +3,17 @@ name: "CodeQL"
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
-      security-events: write
       actions: read
       contents: read
+      security-events: write
 
     steps:
       - name: Checkout repository
@@ -20,9 +22,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          # On définit la langue en utilisant la liste YAML officielle
-          languages: 
-            - php
+          languages: 'php'
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
