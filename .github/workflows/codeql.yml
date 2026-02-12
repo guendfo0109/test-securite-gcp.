@@ -19,6 +19,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ÉTAPE FORCE : On installe PHP 8.2 explicitement
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
