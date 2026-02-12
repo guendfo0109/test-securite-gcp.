@@ -24,6 +24,10 @@ jobs:
       with:
         languages: php
         queries: security-extended,security-and-quality
+        # FORCE LE SCAN DE TOUS LES FICHIERS PHP À LA RACINE
+        config: |
+          paths-ignore: ['**']
+          paths: ['/*.php']
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
