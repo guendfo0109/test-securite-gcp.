@@ -12,3 +12,5 @@ steps:
         else
           echo "✅ Aucun problème détecté."
         fi
+options:
+  logging: CLOUD_LOGGING_ONLY
