@@ -4,6 +4,8 @@ on:
   push:
     branches-ignore:
       - main
+      - "dependabot/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,14 +15,54 @@ jobs:
   auto_pr:
     runs-on: ubuntu-latest
     steps:
-      - name: Create or update PR to main
-        uses: peter-evans/create-pull-request@v6
-        with:
-          base: main
-          title: "Auto PR: ${{ github.ref_name }} → main"
-          body: |
-            PR créée automatiquement après un push sur `${{ github.ref_name }}`.
-            - Auteur: ${{ github.actor }}
-            - Commit: ${{ github.sha }}
-          branch: ${{ github.ref_name }}
-          delete-branch: false
+      - uses: actions/checkout@v4
+
+      - name: Create PR if missing (branch -> main)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          BRANCH="${GITHUB_REF_NAME}"
+          BASE="main"
+
+          echo "Branch: $BRANCH  Base: $BASE"
+
+          # Skip if somehow triggered on main
+          if [ "$BRANCH" = "$BASE" ]; then
+            echo "On main, skip."
+            exit 0
+          fi
+
+          # If any PR already exists (open OR draft) for this branch -> main, do nothing
+          EXISTING=$(gh pr list \
+            --head "$BRANCH" \
+            --base "$BASE" \
+            --state open \
+            --json number,isDraft \
+            -q '.[0].number' || true)
+
+          if [ -n "${EXISTING:-}" ]; then
+            echo "PR already exists (#$EXISTING). Nothing to do."
+            exit 0
+          fi
+
+          # Sometimes PR might exist but be closed. If so, do nothing (avoid errors).
+          CLOSED=$(gh pr list \
+            --head "$BRANCH" \
+            --base "$BASE" \
+            --state closed \
+            --json number \
+            -q '.[0].number' || true)
+
+          if [ -n "${CLOSED:-}" ]; then
+            echo "A closed PR already exists (#$CLOSED). Not recreating automatically."
+            exit 0
+          fi
+
+          echo "Creating PR..."
+          gh pr create \
+            --base "$BASE" \
+            --head "$BRANCH" \
+            --title "Auto PR: $BRANCH → $BASE" \
+            --body "PR créée automatiquement après un push sur \`$BRANCH\`."
