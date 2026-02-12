@@ -10,6 +10,7 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+
     permissions:
       actions: read
       contents: read
@@ -19,7 +20,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ÉTAPE FORCE : On installe PHP 8.2 explicitement
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -29,6 +29,8 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: php
+          build-mode: none
+          queries: security-and-quality
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
