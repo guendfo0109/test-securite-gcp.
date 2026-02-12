@@ -22,7 +22,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
-        languages: 'php' # Ajout de guillemets pour être plus strict
+        languages: 'php'
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
