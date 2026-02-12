@@ -1,0 +1,50 @@
+name: Auto PR to main
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - "dependabot/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto_pr:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create PR if missing (current branch -> main)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          BRANCH="${GITHUB_REF_NAME}"
+          BASE="main"
+
+          echo "Branch: $BRANCH  Base: $BASE"
+
+          # Si jamais le workflow est lancé manuellement sur main, on skip
+          if [ "$BRANCH" = "$BASE" ]; then
+            echo "On main branch, skip auto PR."
+            exit 0
+          fi
+
+          # Vérifie si une PR existe déjà pour BRANCH -> main
+          PR_NUMBER=$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number -q '.[0].number' || true)
+
+          if [ -n "${PR_NUMBER:-}" ]; then
+            echo "PR already exists: #$PR_NUMBER"
+            exit 0
+          fi
+
+          # Crée la PR
+          gh pr create \
+            --base "$BASE" \
+            --head "$BRANCH" \
+            --title "Auto PR: $BRANCH → $BASE" \
+            --body "PR créée automatiquement après un push sur \`$BRANCH\`."
