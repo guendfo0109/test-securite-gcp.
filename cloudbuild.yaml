@@ -1,0 +1,14 @@
+steps:
+  # Étape de scan SAST
+  - name: 'ubuntu'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        echo "Lancement du scan de sécurité OWASP..."
+        if grep -q "\$_GET" index.php; then
+          echo "❌ ALERTE : Faille d'injection détectée dans index.php !"
+          exit 1
+        else
+          echo "✅ Aucun problème détecté."
+        fi
