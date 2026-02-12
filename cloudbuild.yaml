@@ -1,16 +1,4 @@
-steps:
-  - name: 'ubuntu'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "Lancement du scan de sécurité OWASP..."
-        if grep -q "GET" index.php; then
-          echo "FAILLE DETECTEE : Injection possible dans index.php"
-          exit 1
-        else
-          echo "RAS : Aucun problème détecté"
-        fi
-
-options:
-  logging: CLOUD_LOGGING_ONLY
+<?php
+  $name = $_GET['name'];
+  echo "<h1>Bonjour " . $name . "</h1>"; // Faille XSS classique
+?>
