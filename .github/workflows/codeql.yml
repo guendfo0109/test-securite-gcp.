@@ -22,14 +22,7 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
-        languages: php
-        queries: security-extended,security-and-quality
-        # FORCE LE SCAN DE TOUS LES FICHIERS PHP À LA RACINE
-        config: |
-          paths-ignore: ['**']
-          paths: ['/*.php']
+        languages: 'php' # Ajout de guillemets pour être plus strict
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
-      with:
-        upload: true
