@@ -1,15 +1,48 @@
 steps:
+  # Étape 1 : Scan de sécurité OWASP (votre étape existante)
   - name: 'ubuntu'
+    id: 'OWASP Security Scan' # Ajout d'un ID pour mieux identifier l'étape
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         echo "Lancement du scan de sécurité OWASP..."
+        # Le code PHP est supposé être dans le répertoire de travail
         if grep -q "GET" index.php; then
           echo "FAILLE DETECTEE : Injection possible dans index.php"
           exit 1
         else
           echo "RAS : Aucun problème détecté"
         fi
-options:
-  logging: CLOUD_LOGGING_ONLY
+    # S'assurer que le scan de sécurité réussit avant de continuer
+    waitFor: ['-'] # Attend que toutes les étapes précédentes (s'il y en avait) soient terminées
+
+  # Étape 2 : Construction de l'image Docker
+  # Cette étape ne s'exécutera que si le scan de sécurité réussit.
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Docker Image'
+    args:
+      - 'build'
+      - '-t'
+      - '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:${COMMIT_SHA}'
+      - '.' # Le Dockerfile est supposé être à la racine du dépôt
+    waitFor: ['OWASP Security Scan'] # Attend que le scan de sécurité soit terminé avec succès
+
+  # Étape 3 : Push de l'image Docker vers Artifact Registry
+  # Cette étape ne s'exécutera que si la construction de l'image réussit.
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push to Artifact Registry'
+    args:
+      - 'push'
+      - '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:${COMMIT_SHA}'
+    waitFor: ['Build Docker Image'] # Attend que la construction de l'image soit terminée avec succès
+
+# Images qui seront stockées dans Artifact Registry
+images:
+  - '${_LOCATION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_IMAGE}:${COMMIT_SHA}'
+
+# Substitutions : Vous devrez les définir soit ici, soit dans votre déclencheur Cloud Build
+substitutions:
+  _LOCATION: 'europe-west1'             # Remplacez par la région de votre dépôt Artifact Registry (ex: europe-west1)
+  _REPOSITORY: 'mon-depot-docker'       # Remplacez par le nom de votre dépôt Docker dans Artifact Registry
+  _IMAGE: 'mon-application-web'         # Remplacez par le nom de votre image (ex: mon-application-web)
