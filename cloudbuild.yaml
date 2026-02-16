@@ -1,18 +1,50 @@
 steps:
+
+  # 1. Scan des secrets
+  - name: 'gitleaks/gitleaks'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - 'gitleaks detect --source . || true'
+
+  # 2. Scan sécurité basique (Trivy optionnel)
+  - name: 'aquasec/trivy'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - 'trivy fs --exit-code 0 . || true'
+
+  # 3. Build de l'image Docker
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-t'
-      - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+      - 'europe-west1-docker.pkg.dev/project-229df26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
       - '.'
 
+  # 4. Push dans Artifact Registry (stockage sécurisé)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+      - 'europe-west1-docker.pkg.dev/project-229df26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+
+  # 5. Déploiement automatique dans Cloud Run (service = test)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'test'
+      - '--image'
+      - 'europe-west1-docker.pkg.dev/project-229df26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+      - '--region'
+      - 'europe-west1'
+      - '--platform'
+      - 'managed'
+      - '--quiet'
 
 images:
-  - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+  - 'europe-west1-docker.pkg.dev/project-229df26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
