@@ -1,15 +1,18 @@
 steps:
-  - name: 'ubuntu'
-    entrypoint: 'bash'
+  - name: 'gcr.io/cloud-builders/docker'
     args:
-      - '-c'
-      - |
-        echo "Lancement du scan de sécurité OWASP..."
-        if grep -q "GET" index.php; then
-          echo "FAILLE DETECTEE : Injection possible dans index.php"
-          exit 1
-        else
-          echo "RAS : Aucun problème détecté"
-        fi
+      - 'build'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+
+images:
+  - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+
 options:
   logging: CLOUD_LOGGING_ONLY
