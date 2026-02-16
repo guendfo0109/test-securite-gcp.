@@ -1,18 +1,61 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'build'
-      - '-t'
-      - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
-      - '.'
 
-  - name: 'gcr.io/cloud-builders/docker'
-    args:
-      - 'push'
-      - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+# 1. Scan des secrets
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'scan-secrets'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker run --rm \
+    -v /workspace:/workspace \
+    zricethezav/gitleaks:latest detect --source=/workspace || true
+
+# 2. Scan vulnérabilités
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'scan-vulns'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    docker run --rm \
+    -v /workspace:/workspace \
+    aquasec/trivy:latest fs /workspace || true
+
+# 3. Build image
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'build-image'
+  args:
+  - 'build'
+  - '-t'
+  - 'europe-west1-docker.pkg.dev/project-229f26b8-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+  - '.'
+
+# 4. Push image
+- name: 'gcr.io/cloud-builders/docker'
+  id: 'push-image'
+  args:
+  - 'push'
+  - 'europe-west1-docker.pkg.dev/project-229f26b8-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+
+# 5. Deploy Cloud Run
+- name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+  id: 'deploy-cloudrun'
+  entrypoint: 'gcloud'
+  args:
+  - 'run'
+  - 'deploy'
+  - 'test'
+  - '--image'
+  - 'europe-west1-docker.pkg.dev/project-229f26b8-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+  - '--region'
+  - 'europe-west1'
+  - '--platform'
+  - 'managed'
+  - '--quiet'
 
 images:
-  - 'europe-west1-docker.pkg.dev/project-22d9f26b-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
+- 'europe-west1-docker.pkg.dev/project-229f26b8-a75f-4092-b59/cloud-run-source-deploy/my-app:$SHORT_SHA'
 
 options:
   logging: CLOUD_LOGGING_ONLY
