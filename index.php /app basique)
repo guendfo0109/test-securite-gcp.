@@ -1,9 +1,2 @@
-Dockerfile
-Copier le code
-FROM php:8.2-apache
-
-WORKDIR /var/www/html
-
-COPY . .
-
-EXPOSE 80index.php/app basiqeu
+<?php
+echo "Hello from PHP";
