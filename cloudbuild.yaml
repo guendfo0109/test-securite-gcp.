@@ -31,6 +31,7 @@ steps:
       - '.'
 
   # 4. Déploiement sur Cloud Run
+  # On retire le --set-env-vars qui causait le conflit de "string literal"
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-cloudrun'
     entrypoint: 'gcloud'
@@ -46,8 +47,6 @@ steps:
       - 'managed'
       - '--quiet'
       - '--allow-unauthenticated'
-      - '--set-env-vars'
-      - 'APP_KEY=base64:uPBy7p8k6X9/o/D8fS4D5v8S8S8S8S8S8S8S8S8S8S8='
 
 images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
