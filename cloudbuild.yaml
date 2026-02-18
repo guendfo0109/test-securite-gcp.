@@ -1,6 +1,5 @@
 steps:
   # 1. Scan des secrets (Gitleaks)
-  # Vérifie qu'aucun mot de passe ou clé n'est présent dans le code.
   - name: 'gcr.io/cloud-builders/docker'
     id: 'scan-secrets'
     entrypoint: 'bash'
@@ -12,7 +11,6 @@ steps:
         zricethezav/gitleaks:latest detect --source=/workspace || true
 
   # 2. Scan des vulnérabilités (Trivy)
-  # Analyse les failles de sécurité dans tes dépendances.
   - name: 'gcr.io/cloud-builders/docker'
     id: 'scan-vulns'
     entrypoint: 'bash'
@@ -24,7 +22,7 @@ steps:
         aquasec/trivy:latest fs /workspace || true
 
   # 3. Build de l'image Docker
-  # Construction de l'image à partir du Dockerfile.
+  # On s'assure que l'image est bien tagguée pour Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-image'
     args:
@@ -34,14 +32,14 @@ steps:
       - '.'
 
   # 4. Déploiement sur Cloud Run
-  # Cette étape utilise l'image construite juste avant.
+  # J'ai ajouté --allow-unauthenticated pour faciliter tes tests d'URL
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-cloudrun'
     entrypoint: 'gcloud'
     args:
       - 'run'
       - 'deploy'
-      - 'test'
+      - 'test' 
       - '--image'
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
       - '--region'
@@ -49,10 +47,9 @@ steps:
       - '--platform'
       - 'managed'
       - '--quiet'
+      - '--allow-unauthenticated'
 
-# SECTION CRUCIALE : Le "Push" natif
-# C'est ici que Cloud Build envoie l'image vers Artifact Registry automatiquement.
-# Cela règle ton erreur de permission 'iam.serviceAccounts.get'.
+# Le Push est géré ici de manière native pour éviter les erreurs iam.serviceAccounts.get
 images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
 
