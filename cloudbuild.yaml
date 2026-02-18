@@ -22,7 +22,6 @@ steps:
         aquasec/trivy:latest fs /workspace || true
 
   # 3. Build de l'image Docker
-  # On s'assure que l'image est bien tagguée pour Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-image'
     args:
@@ -32,14 +31,14 @@ steps:
       - '.'
 
   # 4. Déploiement sur Cloud Run
-  # J'ai ajouté --allow-unauthenticated pour faciliter tes tests d'URL
+  # Ajout de --set-env-vars pour éviter le crash au démarrage de Laravel
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-cloudrun'
     entrypoint: 'gcloud'
     args:
       - 'run'
       - 'deploy'
-      - 'test' 
+      - 'test'
       - '--image'
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
       - '--region'
@@ -48,10 +47,12 @@ steps:
       - 'managed'
       - '--quiet'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'APP_KEY=base64:uPBy7p8k6X9/o/D8fS4D5v8S8S8S8S8S8S8S8S8S8S8='
 
-# Le Push est géré ici de manière native pour éviter les erreurs iam.serviceAccounts.get
+# Le Push est géré ici de manière native (plus fiable pour les permissions)
 images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
 
 options:
-  logging: CLOUD_LOGGING_ONLY
+  logging: CLOUD_LOGGING_ONLYsteps:
