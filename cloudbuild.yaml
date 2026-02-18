@@ -1,11 +1,16 @@
 steps:
-  # 1. Scan des secrets
+  # 1. Scans de sécurité (on garde tout)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'scan-secrets'
     entrypoint: 'bash'
     args: ['-c', 'docker run --rm -v /workspace:/workspace zricethezav/gitleaks:latest detect --source=/workspace || true']
 
-  # 2. Build de l'image Docker
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'scan-vulns'
+    entrypoint: 'bash'
+    args: ['-c', 'docker run --rm -v /workspace:/workspace aquasec/trivy:latest fs /workspace || true']
+
+  # 2. Build et Tagging
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-image'
     args:
@@ -16,7 +21,7 @@ steps:
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:latest'
       - '.'
 
-  # 3. PUSH explicite de l'image (L'étape qui manquait !)
+  # 3. Push vers Artifact Registry (Fonctionne !)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-image'
     args:
@@ -41,10 +46,6 @@ steps:
       - '--quiet'
       - '--allow-unauthenticated'
 
-# On garde cette section par sécurité
 images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:latest'
-
-options:
-  logging: CLOUD_LOGGING_ONLY
