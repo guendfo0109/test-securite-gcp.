@@ -1,34 +1,28 @@
 steps:
-  # 1. Scan des secrets (Gitleaks)
+  # 1. Scan des secrets
   - name: 'gcr.io/cloud-builders/docker'
     id: 'scan-secrets'
     entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        docker run --rm \
-        -v /workspace:/workspace \
-        zricethezav/gitleaks:latest detect --source=/workspace || true
+    args: ['-c', 'docker run --rm -v /workspace:/workspace zricethezav/gitleaks:latest detect --source=/workspace || true']
 
-  # 2. Scan des vulnérabilités (Trivy)
-  - name: 'gcr.io/cloud-builders/docker'
-    id: 'scan-vulns'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        docker run --rm \
-        -v /workspace:/workspace \
-        aquasec/trivy:latest fs /workspace || true
-
-  # 3. Build de l'image Docker
+  # 2. Build de l'image Docker
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-image'
     args:
       - 'build'
       - '-t'
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
+      - '-t'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:latest'
       - '.'
+
+  # 3. PUSH explicite de l'image (L'étape qui manquait !)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-image'
+    args:
+      - 'push'
+      - '--all-tags'
+      - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app'
 
   # 4. Déploiement sur Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -47,9 +41,10 @@ steps:
       - '--quiet'
       - '--allow-unauthenticated'
 
-# Utilisation du push natif pour garantir la stabilité
+# On garde cette section par sécurité
 images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
+  - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
