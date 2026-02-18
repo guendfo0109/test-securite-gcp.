@@ -5,7 +5,13 @@ steps:
     entrypoint: 'bash'
     args: ['-c', 'docker run --rm -v /workspace:/workspace zricethezav/gitleaks:latest detect --source=/workspace || true']
 
-  # 2. Build de l'image Docker
+  # 2. Scan des vulnérabilités
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'scan-vulns'
+    entrypoint: 'bash'
+    args: ['-c', 'docker run --rm -v /workspace:/workspace aquasec/trivy:latest fs /workspace || true']
+
+  # 3. Build de l'image Docker
   - name: 'gcr.io/cloud-builders/docker'
     id: 'build-image'
     args:
@@ -16,7 +22,7 @@ steps:
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:latest'
       - '.'
 
-  # 3. PUSH explicite de l'image (L'étape qui manquait !)
+  # 4. PUSH vers Artifact Registry (Crucial !)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'push-image'
     args:
@@ -24,7 +30,7 @@ steps:
       - '--all-tags'
       - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app'
 
-  # 4. Déploiement sur Cloud Run
+  # 5. Déploiement sur Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy-cloudrun'
     entrypoint: 'gcloud'
@@ -41,7 +47,6 @@ steps:
       - '--quiet'
       - '--allow-unauthenticated'
 
-# On garde cette section par sécurité
 images:
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:$SHORT_SHA'
   - 'europe-west1-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/my-app:latest'
